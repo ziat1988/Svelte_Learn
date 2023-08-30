@@ -1,85 +1,120 @@
 <script>
-    let rows = 6;
-    let cols = 6;
-    const numCase = rows * cols;
-    const mapClass = {
-        v: 'forest',
-        f: 'on-fire',
-        o: 'is-burned'
-    }
+    //import { writable } from 'svelte/store';
 
-    let grid = Array.from({ length: rows * cols }, () => 'v');
-    const p = 0.8;
-    let initFire = [[0,0],[4,2]]
-    let countF = initFire.length
+    class Game
+    {
+        /**
+         *
+         * @param {int} rows
+         * @param {int} cols
+         * @param {array} initFires
+         * @param {number} p
+         */
+        constructor(rows, cols, initFires, p) {
+            this.rows = rows;
+            this.cols= cols;
+            this.initFires = initFires;
+            this.p = p;
 
-    const arrAdj = [[0,-1],[0,1],[-1,0],[1,0]]
-
-    const delay = async (time)=> new Promise(resolve => setTimeout(resolve,time))
-
-    async function startGame(){
-        for(let arrCoord of initFire){
-            const indexFire = getIndexGridByCooord(arrCoord[0], arrCoord[1])
-            grid[indexFire] = 'f'
+            this.grid = Array.from({ length: rows * cols }, () => 'v');
         }
 
-        /***** start burn process ****/
-        while(countF <= numCase && initFire.length > 0) {
-            await delay(1000)
-            const arrayF = [];
-            for(let arrCoord of initFire){
-                const indexFire = getIndexGridByCooord(arrCoord[0], arrCoord[1])
-                for(let adj of arrAdj ){
-                    const newX = adj[0] + arrCoord[0]
-                    const newY = adj[1] + arrCoord[1]
-                    const indexNewCell = getIndexGridByCooord(newX, newY);
-                    if(newX < 0 || newY < 0 || newX > cols -1 || newY > rows - 1 || grid[indexNewCell] !== 'v') {
-                        continue;
-                    }
+        async start()
+        {
+            let countF = this.initFires.length
+            const numCase = this.cols * this.rows;
+            const arrAdj = [[0,-1],[0,1],[-1,0],[1,0]]
+
+            while(countF <= numCase && this.initFires.length > 0) {
+
+                await this.delay(1000)
+                const arrayF = [];
+                for(let arrCoord of this.initFires){
+                    const indexFire = this.getIndexGridByCooord(arrCoord[0], arrCoord[1])
+                    for(let adj of arrAdj ){
+                        const newX = adj[0] + arrCoord[0]
+                        const newY = adj[1] + arrCoord[1]
+                        const indexNewCell = this.getIndexGridByCooord(newX, newY);
+                        if(newX < 0 || newY < 0 || newX > this.cols -1 || newY > this.rows - 1 || this.grid[indexNewCell] !== 'v') {
+                            continue;
+                        }
 
 
-                    if(isBurnByProbability(p)){
-                        grid[indexNewCell] = 'f'
-                        countF ++ ;
-                        arrayF.push([newX, newY])
+                        if(this.isBurnByProbability(this.p)){
+                            this.grid[indexNewCell] = 'f'
+                            gridCells = this.grid.slice(); // Make a copy
+                            countF ++ ;
+                            arrayF.push([newX, newY])
+                        }
+
                     }
+
+                    this.grid[indexFire] = 'o'
+                    gridCells = this.grid.slice(); // Make a copy
 
                 }
 
-                grid[indexFire] = 'o'
+                this.initFires = arrayF
 
             }
 
-            initFire = arrayF
+        }
+
+
+        initDisplay()
+        {
+            for(let arrCoord of this.initFires){
+                const indexFire = this.getIndexGridByCooord(arrCoord[0], arrCoord[1])
+                this.grid[indexFire] = 'f'
+            }
+        }
+
+        async delay(time) {
+            return new Promise(resolve => setTimeout(resolve, time));
+        }
+
+        /**
+         *
+         * @param{number} p
+         */
+        isBurnByProbability(p)
+        {
+            return Math.random() <=p;
+        }
+
+
+        /**
+         *
+         * @param {int} coordX
+         * @param {int} coordY
+         */
+        getIndexGridByCooord(coordX, coordY)
+        {
+            // (2,1) => index 8
+            return coordY * this.cols + coordX  // 1 * 6 + 2 = 8
+        }
+
+        /**
+         *
+         * @param{string} cell
+         */
+        mapClass(cell)
+        {
+            const mapClass = {
+                v: 'forest',
+                f: 'on-fire',
+                o: 'is-burned'
+            }
+
+            return mapClass[cell];
         }
 
     }
 
-    startGame();
-
-    /**
-     *
-     * @param{number} p
-     */
-    function isBurnByProbability(p)
-    {
-        return Math.random() <=p;
-    }
-
-
-    /**
-     *
-     * @param {int} coordX
-     * @param {int} coordY
-     */
-    function getIndexGridByCooord(coordX, coordY)
-    {
-        // (2,1) => index 8
-        return coordY * cols + coordX  // 1 * 6 + 2 = 8
-    }
-
-
-
+    const game = new Game(6,6,[[0,0],[4,2]], 0.3)
+    game.initDisplay()
+    game.start()
+    let gridCells = game.grid.slice(); // Initial copy for reactivity
 </script>
 
 <style>
@@ -113,8 +148,8 @@
 </style>
 
 <div class="grid-container">
-    {#each grid as cell}
-        <div class="grid-cell {mapClass[cell]}">{cell}</div>
+    {#each gridCells as cell}
+        <div class="grid-cell {game.mapClass(cell)}">{cell}</div>
     {/each}
 </div>
 
