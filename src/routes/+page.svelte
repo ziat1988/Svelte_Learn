@@ -1,5 +1,5 @@
 <script>
-    //import { writable } from 'svelte/store';
+    import { writable } from 'svelte/store';
 
     class Game
     {
@@ -17,6 +17,7 @@
             this.p = p;
 
             this.grid = Array.from({ length: rows * cols }, () => 'v');
+            this.grid$ = writable(this.grid)
         }
 
         async start()
@@ -42,7 +43,7 @@
 
                         if(this.isBurnByProbability(this.p)){
                             this.grid[indexNewCell] = 'f'
-                            gridCells = this.grid.slice(); // Make a copy
+                            this.grid$.set(this.grid)
                             countF ++ ;
                             arrayF.push([newX, newY])
                         }
@@ -50,12 +51,11 @@
                     }
 
                     this.grid[indexFire] = 'o'
-                    gridCells = this.grid.slice(); // Make a copy
+                    this.grid$.set(this.grid)
 
                 }
 
                 this.initFires = arrayF
-
             }
 
         }
@@ -114,7 +114,7 @@
     const game = new Game(6,6,[[0,0],[4,2]], 0.3)
     game.initDisplay()
     game.start()
-    let gridCells = game.grid.slice(); // Initial copy for reactivity
+    const gridStore = game.grid$
 </script>
 
 <style>
@@ -148,7 +148,7 @@
 </style>
 
 <div class="grid-container">
-    {#each gridCells as cell}
+    {#each $gridStore as cell}
         <div class="grid-cell {game.mapClass(cell)}">{cell}</div>
     {/each}
 </div>
